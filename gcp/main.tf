@@ -55,3 +55,40 @@ resource "google_compute_instance_group_manager" "instance-group-manager" {
     initial_delay_sec = 300
   }
 }
+
+resource "google_compute_backend_service" "backend-service" {
+  name                    = "rpl-backend-service"
+  protocol                = "HTTP"
+  timeout_sec             = 30
+  enable_cdn              = false
+
+  backend {
+    group = google_compute_instance_group_manager.instance-group-manager.id
+  }
+
+  health_checks = ["${google_compute_http_health_check.health_check.id}"]
+}
+
+resource "google_compute_url_map" "url-map" {
+  name            = "rpl-url-map"
+  default_service = google_compute_backend_service.backend-service.id
+}
+
+resource "google_compute_global_forwarding_rule" "global-forwarding-rule" {
+  name        = "rpl-forwarding-rule"
+  target      = google_compute_url_map.example.id
+  port_range  = "80"
+  ip_protocol = "TCP"
+}
+
+resource "google_compute_firewall" "firewall" {
+  name    = "allow-http"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+}
