@@ -6,7 +6,7 @@ provider "google" {
 
 resource "google_compute_instance_template" "instance-template" {
   name         = "rpl-instance-template"
-  machine_type = "e2-medium"
+  machine_type = "e2-micro"
   region       = "asia-southeast1"
 
   network_interface {
@@ -17,7 +17,7 @@ resource "google_compute_instance_template" "instance-template" {
   }
 
   disk {
-    source_image = "debian-cloud/debian-11"
+    source_image = "ubuntu-os-cloud/ubuntu-2204-lts"
   }
 }
 
