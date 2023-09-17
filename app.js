@@ -19,6 +19,11 @@ db.connect((err) => {
   console.log('Connected to MySQL database');
 });
 
+app.get('/api/version', (req, res) => {
+    const version = 'v16.14.2';
+    res.send(`Node version: ${version}`);
+});
+
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
 
