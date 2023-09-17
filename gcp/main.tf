@@ -51,7 +51,7 @@ resource "google_compute_instance_group_manager" "instance-group-manager" {
   }
 
   auto_healing_policies {
-    health_check      = google_compute_health_check.autohealing.id
+    health_check      = google_compute_health_check.health-check.id
     initial_delay_sec = 300
   }
 }
@@ -66,7 +66,7 @@ resource "google_compute_backend_service" "backend-service" {
     group = google_compute_instance_group_manager.instance-group-manager.id
   }
 
-  health_checks = ["${google_compute_http_health_check.health_check.id}"]
+  health_checks = ["${google_compute_health_check.health-check.id}"]
 }
 
 resource "google_compute_url_map" "url-map" {
@@ -76,7 +76,7 @@ resource "google_compute_url_map" "url-map" {
 
 resource "google_compute_global_forwarding_rule" "global-forwarding-rule" {
   name        = "rpl-forwarding-rule"
-  target      = google_compute_url_map.example.id
+  target      = google_compute_url_map.url-map.id
   port_range  = "80"
   ip_protocol = "TCP"
 }
