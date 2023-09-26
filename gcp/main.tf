@@ -23,7 +23,7 @@ resource "google_compute_instance_template" "instance-template" {
   disk {
     source_image = "ubuntu-os-cloud/ubuntu-2204-lts"
   }
-  
+
   tags = ["app-server"]
 }
 
