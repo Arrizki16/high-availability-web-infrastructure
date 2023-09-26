@@ -23,14 +23,16 @@ resource "google_compute_instance_template" "instance-template" {
 
 resource "google_compute_health_check" "health-check" {
   name                = "rpl-health-check"
-  check_interval_sec  = 5
+  description         = "Intance health check via http"
+  check_interval_sec  = 10
   timeout_sec         = 5
   healthy_threshold   = 2
   unhealthy_threshold = 10
 
   http_health_check {
-    request_path = "/health-check"
+    request_path = "/"
     port         = "8080"
+    response     = "ok"
   }
 }
 
@@ -47,7 +49,7 @@ resource "google_compute_instance_group_manager" "instance-group-manager" {
 
   named_port {
     name = "customhttp"
-    port = 8888
+    port = 8080
   }
 
   auto_healing_policies {
@@ -56,39 +58,28 @@ resource "google_compute_instance_group_manager" "instance-group-manager" {
   }
 }
 
-resource "google_compute_backend_service" "backend-service" {
-  name                    = "rpl-backend-service"
-  protocol                = "HTTP"
-  timeout_sec             = 30
-  enable_cdn              = false
-
-  backend {
-    group = google_compute_instance_group_manager.instance-group-manager.id
-  }
-
-  health_checks = ["${google_compute_health_check.health-check.id}"]
-}
-
-resource "google_compute_url_map" "url-map" {
-  name            = "rpl-url-map"
-  default_service = google_compute_backend_service.backend-service.id
-}
-
-resource "google_compute_global_forwarding_rule" "global-forwarding-rule" {
-  name        = "rpl-forwarding-rule"
-  target      = google_compute_url_map.url-map.id
-  port_range  = "80"
-  ip_protocol = "TCP"
-}
-
-resource "google_compute_firewall" "firewall" {
-  name    = "allow-http"
-  network = "default"
-
+resource "google_compute_firewall" "http-allow" {
+  name        = "allow-http"
+  network     = "default"
+  description = "Allow incoming HTTP traffic"
+  
   allow {
     protocol = "tcp"
     ports    = ["80"]
   }
 
   source_ranges = ["0.0.0.0/0"]
+}
+
+resource "google_compute_firewall" "health-check-allow" {
+  name        = "allow-health-check"
+  network     = "default"
+  description = "Allow health check traffic"
+  
+  allow {
+    protocol = "tcp"
+    ports    = ["80"]
+  }
+
+  source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
 }
