@@ -1,5 +1,5 @@
 provider "google" {
-  credentials = file("gcp-credentials.json")
+  credentials = file("rpl-deka-serviceaccount.json")
   project     = "rpl-research"
   region      = "asia-southeast1"
 }
