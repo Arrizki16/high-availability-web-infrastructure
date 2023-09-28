@@ -73,7 +73,7 @@ resource "google_compute_instance_group_manager" "instance-group-manager" {
     name              = "primary"
   }
   base_instance_name = "rpl-instance"
-  target_size        = 2
+  target_size        = 1
 }
 
 resource "google_compute_autoscaler" "autoscaler" {
