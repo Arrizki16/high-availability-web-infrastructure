@@ -4,17 +4,27 @@ provider "google" {
   region      = "asia-southeast1"
 }
 
-resource "google_compute_target_pool" "instance-pool" {
-  name = "rpl-instance-pool"
+resource "google_compute_network" "rpl-vpc-network" {
+  name                    = "rpl-vpc-network"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "rpl-backend-subnet" {
+  name          = "rpl-backend-subnet"
+  ip_cidr_range = "10.148.0.0/24"
+  region        = "asia-southeast1"
+  network       = google_compute_network.rpl-vpc-network.id
 }
 
 resource "google_compute_instance_template" "instance-template" {
-  name         = "rpl-instance-template-test"
+  name         = "rpl-instance-template"
   machine_type = "e2-micro"
   region       = "asia-southeast1"
+  tags         = ["allow-http"]
 
   network_interface {
-    network = "default"
+    network    = google_compute_network.rpl-vpc-network.id
+    subnetwork = google_compute_subnetwork.rpl-backend-subnet.id
     access_config {
 
     }
@@ -24,45 +34,46 @@ resource "google_compute_instance_template" "instance-template" {
     source_image = "ubuntu-os-cloud/ubuntu-2204-lts"
   }
 
-  tags = ["app-server"]
-}
+  metadata = {
+    startup-script = <<-EOF1
+      #! /bin/bash
+      set -euo pipefail
 
-resource "google_compute_health_check" "health-check" {
-  name                = "rpl-health-check-test"
-  description         = "Intance health check via http"
-  check_interval_sec  = 10
-  timeout_sec         = 5
-  healthy_threshold   = 2
-  unhealthy_threshold = 10
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get install -y nginx-light jq
 
-  http_health_check {
-    request_path = "/"
-    port         = "80"
-    response     = "ok"
+      NAME=$(curl -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/hostname")
+      IP=$(curl -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip")
+      METADATA=$(curl -f -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/?recursive=True" | jq 'del(.["startup-script"])')
+
+      cat <<EOF > /var/www/html/index.html
+      <pre>
+      Name: $NAME
+      IP: $IP
+      Metadata: $METADATA
+      </pre>
+      EOF
+    EOF1
+  }
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
 resource "google_compute_instance_group_manager" "instance-group-manager" {
-  name = "rpl-instance-group-test"
-
-  target_pools       = [google_compute_target_pool.instance-pool.id]
-  base_instance_name = "rpl-instance-test"
-  zone               = "asia-southeast1-a"
-
-  version {
-    instance_template = google_compute_instance_template.instance-template.id
-  }
-  target_size = 1
-
+  name     = "rpl-instance-group-manager"
+  zone     = "asia-southeast1-a"
   named_port {
     name = "http"
     port = 80
   }
-
-  auto_healing_policies {
-    health_check      = google_compute_health_check.health-check.id
-    initial_delay_sec = 300
+  version {
+    instance_template = google_compute_instance_template.instance-template.id
+    name              = "primary"
   }
+  base_instance_name = "rpl-instance"
+  target_size        = 2
 }
 
 resource "google_compute_autoscaler" "autoscaler" {
@@ -82,8 +93,8 @@ resource "google_compute_autoscaler" "autoscaler" {
 }
 
 resource "google_compute_firewall" "http-allow" {
-  name        = "allow-http-test"
-  network     = "default"
+  name        = "rpl-allow-http"
+  network     = google_compute_network.rpl-vpc-network.id
   description = "Allow incoming HTTP traffic"
 
   allow {
@@ -91,20 +102,17 @@ resource "google_compute_firewall" "http-allow" {
     ports    = ["80"]
   }
 
-  target_tags   = ["app-server"]
+  target_tags   = ["allow-http"]
   source_ranges = ["0.0.0.0/0"]
 }
 
-resource "google_compute_firewall" "health-check-allow" {
-  name        = "allow-health-check-test"
-  network     = "default"
-  description = "Allow health check traffic"
-
+resource "google_compute_firewall" "hc-firewall" {
+  name          = "rp-allow-health-check"
+  direction     = "INGRESS"
+  network       = google_compute_network.rpl-vpc-network.id
+  source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
   allow {
     protocol = "tcp"
-    ports    = ["80"]
   }
-
-  target_tags   = ["app-server"]
-  source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
+  target_tags = ["allow-health-check"]
 }
