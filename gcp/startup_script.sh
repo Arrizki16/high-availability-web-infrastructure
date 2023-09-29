@@ -10,7 +10,7 @@ sudo git clone https://github.com/Arrizki16/high-availability-web-infrastructure
 
 cd /var/www/app/src
 sudo npm install
-sido pm2 start ecosystem.config.cjs
+sudo pm2 start ecosystem.config.cjs
 
 sudo cat <<EOF > /etc/nginx/sites-available/app.conf
 server {  

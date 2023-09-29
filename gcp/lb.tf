@@ -7,8 +7,14 @@ resource "google_compute_global_address" "lb-ip" {
 
 resource "google_compute_health_check" "health-check" {
   name     = "rpl-health-check"
+  check_interval_sec = 10
+  timeout_sec = 10
+  healthy_threshold = 2
+  unhealthy_threshold = 2 
+
   http_health_check {
     port = 80
+    request_patth = "/api/version"
   }
 }
 
