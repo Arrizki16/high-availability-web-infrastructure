@@ -1,22 +1,24 @@
 #!/bin/bash
-set -euo pipefail
+sudo apt-get update -y
+sudo apt-get install -y nginx git
+curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+sudo apt-get install -y nodejs
 
-apt-get update
-apt-get install -y nginx nodejs npm git
-mkdir -p /var/www/my-node-app
+sudo npm install pm2 -g
 
-git clone https://github.com/Arrizki16/lb-provisioning.git /var/www/my-node-app
+sudo git clone https://github.com/Arrizki16/high-availability-web-infrastructure.git /var/www/app
 
-cd /var/www/my-node-app
-npm install
+cd /var/www/app/src
+sudo npm install
+sido pm2 start ecosystem.config.cjs
 
-cat <<EOF > /etc/nginx/sites-available/my-node-app
-server {
+sudo cat <<EOF > /etc/nginx/sites-available/app.conf
+server {  
     listen 80;
-    server_name localhost:80;
+    server_name localhost;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:3333;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -26,10 +28,7 @@ server {
 }
 EOF
 
-ln -s /etc/nginx/sites-available/my-node-app /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
-nginx -t
-systemctl reload nginx
-
-nohup npm start &
-echo "Startup script execution completed."
+sudo ln -s /etc/nginx/sites-available/app.conf /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx

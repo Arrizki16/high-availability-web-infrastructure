@@ -2,7 +2,7 @@ require('dotenv').config({path:'./.env'});
 const express = require('express');
 const mysql = require('mysql');
 const app = express();
-const port = 3000;
+const port = 3333;
 
 app.use(express.json());
 
