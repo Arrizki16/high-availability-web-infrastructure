@@ -18,7 +18,7 @@ resource "google_compute_subnetwork" "rpl-backend-subnet" {
 
 resource "google_compute_instance_template" "instance-template" {
   name         = "rpl-instance-template"
-  machine_type = "e2-micro"
+  machine_type = "e2-medium"
   region       = "asia-southeast1"
   tags         = ["allow-http", "allow-ssh"]
 
@@ -35,31 +35,43 @@ resource "google_compute_instance_template" "instance-template" {
   }
 
   metadata = {
-    startup-script = <<-EOF1
-      #! /bin/bash
-      set -euo pipefail
-
-      export DEBIAN_FRONTEND=noninteractive
-      apt-get update
-      apt-get install -y nginx-light jq
-
-      NAME=$(curl -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/hostname")
-      IP=$(curl -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip")
-      METADATA=$(curl -f -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/?recursive=True" | jq 'del(.["startup-script"])')
-
-      cat <<EOF > /var/www/html/index.html
-      <pre>
-      Name: $NAME
-      IP: $IP
-      Metadata: $METADATA
-      </pre>
-      EOF
-    EOF1
+    startup-script = "${file("startup_script.sh")}"
   }
   lifecycle {
     create_before_destroy = true
   }
 }
+
+# resource "google_compute_instance_template" "instance-template" {
+#   name         = "rpl-instance-template"
+#   machine_type = "e2-micro"
+#   tags         = ["allow-http", "allow-ssh"]
+
+#   network_interface {
+#     network    = google_compute_network.rpl-vpc-network.id
+#     subnetwork = google_compute_subnetwork.rpl-backend-subnet.id
+#     access_config {
+
+#     }
+#   }
+
+#   disk {
+#     source_image = "ubuntu-os-cloud/ubuntu-2204-lts"
+#   }
+
+#   metadata = {
+#     "google-container-manifest" = <<EOT
+#     {
+#       "name": "rpl-container",
+#       "image": "asia-southeast1-docker.pkg.dev/rpl-research/rpl-repository/rpl-app",
+#       "ports": [{
+#         "containerPort": 80,
+#         "hostPort": 80
+#       }]
+#     }
+#     EOT
+#   }
+# }
 
 resource "google_compute_instance_group_manager" "instance-group-manager" {
   name     = "rpl-instance-group-manager"

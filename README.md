@@ -1,2 +1,1 @@
-# lb-provisioning
-Repository untuk implementasi riset RPL
+# High Availability Web App Infrastructure
