@@ -20,7 +20,7 @@ resource "google_compute_instance_template" "instance-template" {
   name         = "rpl-instance-template"
   machine_type = "e2-micro"
   region       = "asia-southeast1"
-  tags         = ["allow-http"]
+  tags         = ["allow-http", "allow-ssh"]
 
   network_interface {
     network    = google_compute_network.rpl-vpc-network.id
@@ -103,6 +103,20 @@ resource "google_compute_firewall" "http-allow" {
   }
 
   target_tags   = ["allow-http"]
+  source_ranges = ["0.0.0.0/0"]
+}
+
+resource "google_compute_firewall" "ssh-allow" {
+  name        = "rpl-allow-ssh"
+  network     = google_compute_network.rpl-vpc-network.id
+  description = "Allow incoming SSH"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  target_tags   = ["allow-ssh"]
   source_ranges = ["0.0.0.0/0"]
 }
 
