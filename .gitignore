@@ -163,3 +163,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 *serviceaccount*
+*.pem
+*.ppk
+*.pub
