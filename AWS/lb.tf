@@ -41,3 +41,7 @@ resource "aws_lb_listener" "listener" {
     target_group_arn = aws_lb_target_group.target-group.arn
   }
 }
+
+output "loadbalancer-dns" {
+  value = aws_lb.load-balancer.dns_name
+}
