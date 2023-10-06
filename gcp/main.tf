@@ -18,7 +18,7 @@ resource "google_compute_subnetwork" "rpl-backend-subnet" {
 
 resource "google_compute_instance_template" "instance-template" {
   name         = "rpl-instance-template"
-  machine_type = "e2-medium"
+  machine_type = "e2-small"
   region       = "asia-southeast1"
   tags         = ["allow-http", "allow-ssh"]
 

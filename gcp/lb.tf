@@ -14,7 +14,7 @@ resource "google_compute_health_check" "health-check" {
 
   http_health_check {
     port = 80
-    request_patth = "/api/version"
+    request_path = "/api/version"
   }
 }
 
