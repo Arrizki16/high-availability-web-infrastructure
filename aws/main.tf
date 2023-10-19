@@ -5,12 +5,13 @@ resource "aws_key_pair" "rplkey" {
 
 # autoscaling launch config
 resource "aws_launch_configuration" "custom-launch-config" {
+  depends_on = [ aws_db_instance.db-rpl ]
   name = "custom-launch-config"
   image_id = var.AMI
   instance_type = "t2.micro"
   key_name = aws_key_pair.rplkey.key_name
   security_groups = ["sg-0b25b7859155bcde5"]
-  user_data = "${file("init.sh")}"
+  user_data = "${file("init.sh")} ${var.RDS_USER} ${var.RDS_PASS} ${aws_db_instance.db-rpl.address} ${var.RDS_NAME}"
 }
 
 # autoscaling group

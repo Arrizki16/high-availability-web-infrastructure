@@ -9,10 +9,10 @@ sudo npm install pm2 -g
 sudo git clone https://github.com/Arrizki16/high-availability-web-infrastructure.git /var/www/app
 
 cd /var/www/app/src
-sudo echo "DB_NAME=\"rpl\"
-DB_USER=\"rpl\"
-DB_PASSWORD=\"password\"
-DB_HOST=\"13.213.18.93\"
+sudo echo "DB_NAME=\"$4\"
+DB_USER=\"$1\"
+DB_PASSWORD=\"$2\"
+DB_HOST=\"$3\"
 DB_PORT=3306" > .env
 sudo npm install
 sudo pm2 start ecosystem.config.cjs

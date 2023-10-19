@@ -27,7 +27,6 @@ resource "aws_lb" "load-balancer" {
   load_balancer_type = "application"
   security_groups = [ "sg-0b25b7859155bcde5" ]
   subnets = ["subnet-09c24fde4eb965cb4", "subnet-06a261c9dbd53f4a3", "subnet-0715e175e8ca284d0"]
-
   enable_deletion_protection = false
 }
 
