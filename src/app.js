@@ -4,7 +4,13 @@ const mysql = require('mysql');
 const app = express();
 const port = 3333;
 
+var multer = require('multer');
+var upload = multer();
+
 app.use(express.json());
+// for parsing multipart/form-data
+app.use(upload.array()); 
+app.use(express.static('public'));
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -111,8 +117,9 @@ app.post('/api/upload', (req, res) => {
     [blobData],
     (err, results) => {
       if (err) {
-        throw err;
+        return res.status(400).json({ message: err});
       }
+      return res.status(400).json({ message: `${results} :: ${blobData}`});
     }
   );
   return res.status(200).json({ message: `File uploaded successfully.`});
@@ -126,7 +133,13 @@ app.get('/api/image/:id', (req, res) => {
       if (err) {
         throw err;
       }
-      res.send(`${results[0]}`);
+      // return res.status(200).json({ message: `test`});
+      if (results.length > 0) {
+        res.send(Buffer.from(results[0]));
+      }
+      else {
+        return res.status(200).json({ message: `test`});
+      }
     }
   )
 });

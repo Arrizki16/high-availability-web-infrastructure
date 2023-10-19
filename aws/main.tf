@@ -11,7 +11,46 @@ resource "aws_launch_configuration" "custom-launch-config" {
   instance_type = "t2.micro"
   key_name = aws_key_pair.rplkey.key_name
   security_groups = ["sg-0b25b7859155bcde5"]
-  user_data = "${file("init.sh")} ${var.RDS_USER} ${var.RDS_PASS} ${aws_db_instance.db-rpl.address} ${var.RDS_NAME}"
+  user_data = <<EOF
+  #!/bin/bash
+sudo apt-get update -y
+sudo apt-get install -y nginx git
+curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+sudo npm install pm2 -g
+
+sudo git clone https://github.com/Arrizki16/high-availability-web-infrastructure.git /var/www/app
+
+cd /var/www/app/src
+sudo echo "DB_NAME="${var.RDS_NAME}"
+DB_USER="${var.RDS_USER}"
+DB_PASSWORD="${var.RDS_PASS}"
+DB_HOST="${aws_db_instance.db-rpl.address}"
+DB_PORT=3306" > .env
+sudo npm install
+sudo pm2 start ecosystem.config.cjs
+
+sudo echo "server {  
+    listen 80;
+    server_name localhost;
+
+    location / {
+        proxy_pass http://localhost:3333;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}" > /etc/nginx/sites-available/app.conf
+
+sudo ln -s /etc/nginx/sites-available/app.conf /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx
+  EOF
+  # "${file("init.sh")} ${var.RDS_USER} ${var.RDS_PASS} ${aws_db_instance.db-rpl.address} ${var.RDS_NAME}"
 }
 
 # autoscaling group
