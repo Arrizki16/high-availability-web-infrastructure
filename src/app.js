@@ -133,13 +133,7 @@ app.get('/api/image/:id', (req, res) => {
       if (err) {
         throw err;
       }
-      // return res.status(200).json({ message: `test`});
-      if (results.length > 0) {
-        res.send(Buffer.from(results[0]));
-      }
-      else {
-        return res.status(200).json({ message: `test`});
-      }
+      res.send(results[0]);
     }
   )
 });

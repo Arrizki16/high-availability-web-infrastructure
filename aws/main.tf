@@ -12,7 +12,7 @@ resource "aws_launch_configuration" "custom-launch-config" {
   key_name = aws_key_pair.rplkey.key_name
   security_groups = ["sg-0b25b7859155bcde5"]
   user_data = <<EOF
-  #!/bin/bash
+#!/bin/bash
 sudo apt-get update -y
 sudo apt-get install -y nginx git
 curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
@@ -49,8 +49,7 @@ sudo ln -s /etc/nginx/sites-available/app.conf /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
-  EOF
-  # "${file("init.sh")} ${var.RDS_USER} ${var.RDS_PASS} ${aws_db_instance.db-rpl.address} ${var.RDS_NAME}"
+EOF
 }
 
 # autoscaling group
