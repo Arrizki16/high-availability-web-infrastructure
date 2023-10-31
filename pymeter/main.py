@@ -35,22 +35,9 @@ for thread in threads:
     # create a test plan with the required thread group
     test_plan = TestPlan(thread_group, html_reporter)
 
-    '''
-    Thread and iter logic here
-    i = i+1
-    thread = thread + 100
-    '''
-
     # run the test plan and take the results
     start = time.perf_counter()
     stats = test_plan.run()
     end = time.perf_counter()
     timer = ConstantTimer(10000)
     times.append(end-start)
-
-'''
-1 detik ngirim {thread} request
-nunggu batch selesai
-nambah iterasi, sesuaikan jumlah thread dengan iterasi
-test lagi
-'''
