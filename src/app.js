@@ -138,6 +138,78 @@ app.get('/api/image/:id', (req, res) => {
   )
 });
 
+app.post('/api/user/', (req, res) => {
+  const {username, email, password} = req.body;
+
+  if (!email || !password || !username) {
+    return res.status(400).json({ message: 'All fields must be filled.' });
+  }
+
+  db.query(
+    'SELECT * FROM users WHERE email = ? OR username = ?',
+    [email, username],
+    (err, results) => {
+      if (err) {
+        throw err;
+      }
+
+      if (results.length === 0) {
+        db.query(
+          'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+          [username, email, password],
+          (err, results) => {
+            if (err) {
+              throw err;
+            }
+          }
+        );
+        return res.status(200).json({ message: `Account created.`});
+      }
+
+      if (results.length === 2) {
+        if (username === results[0].username || username === results[1].username) {
+          return res.status(401).json({ message: `Username ${username} already taken`});
+        }
+        if (email === results[0].email || email === results[1].email) {
+          return res.status(401).json({ message: `Email ${email} has been used`});
+        }
+      }
+
+      const user = results[0];
+
+      if (username === user.username) {
+        return res.status(401).json({ message: `Username ${username} already taken`});
+      } else {
+        return res.status(401).json({ message: `Email ${email} has been used`});
+      }
+    }
+  );
+})
+
+app.post('/api/user/:id', (req, res) => {
+  const id = req.params.id
+
+  db.query(
+    'SELECT username FROM users WHERE id = ?',
+    [id],
+    (err, results) => {
+      if (err) {
+        throw err;
+      }
+
+      if (results.length === 0) {
+        return res.status(401).json({ message: 'User not found.' });
+      }
+
+      const user = results[0];
+
+      return res.status(200).json({ message: `User found. Username: ${user.username}` });
+    }
+  );
+});
+
+
+
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });

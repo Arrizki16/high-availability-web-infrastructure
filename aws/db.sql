@@ -22,7 +22,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `images` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `data` LONGBLOB NOT NULL
+  `path` varchar(255) NOT NULL
 );
 
 -- --------------------------------------------------------
@@ -32,6 +32,7 @@ CREATE TABLE `images` (
 --
 
 CREATE TABLE `users` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
   `username` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
   `password` varchar(121) NOT NULL
@@ -41,7 +42,7 @@ CREATE TABLE `users` (
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
-  ADD PRIMARY KEY (`username`),
+  ADD UNIQUE KEY `username` (`username`),
   ADD UNIQUE KEY `email` (`email`);
 COMMIT;
 
