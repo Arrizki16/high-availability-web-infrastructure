@@ -1,16 +1,34 @@
 require('dotenv').config({path:'./.env'});
 const express = require('express');
 const mysql = require('mysql');
+const fileUpload = require('express-fileupload');
 const app = express();
 const port = 3333;
+const multer = require('multer');
 
-var multer = require('multer');
-var upload = multer();
 
 app.use(express.json());
 // for parsing multipart/form-data
 app.use(upload.array()); 
 app.use(express.static('public'));
+app.use(fileUpload());
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // limit file size to 5MB
+  },
+});
+
+var AWS = require('aws-sdk');
+
+AWS.config.update({
+  accessKeyId: process.env.ACCESS_KEY, // Access key ID
+  secretAccesskey: process.env.SECRET_ACCESS_KEY, // Secret access key
+  region: process.env.AWS_REGION //Region
+})
+
+const s3 = new AWS.S3();
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -138,55 +156,37 @@ app.get('/api/image/:id', (req, res) => {
   )
 });
 
-app.post('/api/user/', (req, res) => {
-  const {username, email, password} = req.body;
+app.post('/api/user', (req, res) => {
+  const { email, password } = req.body;
 
-  if (!email || !password || !username) {
-    return res.status(400).json({ message: 'All fields must be filled.' });
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required.' });
   }
 
   db.query(
-    'SELECT * FROM users WHERE email = ? OR username = ?',
-    [email, username],
+    'SELECT * FROM users WHERE email = ?',
+    [email],
     (err, results) => {
       if (err) {
         throw err;
       }
 
       if (results.length === 0) {
-        db.query(
-          'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-          [username, email, password],
-          (err, results) => {
-            if (err) {
-              throw err;
-            }
-          }
-        );
-        return res.status(200).json({ message: `Account created.`});
-      }
-
-      if (results.length === 2) {
-        if (username === results[0].username || username === results[1].username) {
-          return res.status(401).json({ message: `Username ${username} already taken`});
-        }
-        if (email === results[0].email || email === results[1].email) {
-          return res.status(401).json({ message: `Email ${email} has been used`});
-        }
+        return res.status(401).json({ message: 'Incorrect email.' });
       }
 
       const user = results[0];
 
-      if (username === user.username) {
-        return res.status(401).json({ message: `Username ${username} already taken`});
+      if (password === user.password) {
+        return res.status(200).json({ message: `Login successful. Welcome, ${user.username}!` });
       } else {
-        return res.status(401).json({ message: `Email ${email} has been used`});
+        return res.status(401).json({ message: 'Incorrect password.' });
       }
     }
   );
-})
+});
 
-app.post('/api/user/:id', (req, res) => {
+app.get('/api/user/:id', (req, res) => {
   const id = req.params.id
 
   db.query(
@@ -208,7 +208,58 @@ app.post('/api/user/:id', (req, res) => {
   );
 });
 
+app.post('/api/image', upload.single('file'), (req, res) => {
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: req.file.originalname,
+    Body: req.file.buffer,
+  };
 
+  s3.upload(params, (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Error uploading file');
+    }
+
+    db.query(
+      'INSERT INTO images (path) VALUES (?)',
+      [req.file.originalname],
+      (err, results) => {
+        if (err) {
+          throw err;
+        }
+      }
+    );
+
+    res.status(201).send('File uploaded successfully');
+  });
+})
+
+app.get('/api/:id/image', (req, res) => {
+  db.query(
+    'SELECT path FROM images WHERE id = ?',
+    [req.params.id],
+    (err, results) => {
+      if (err) {
+        throw err;
+      }
+
+      if (results.length === 0) {
+        return res.status(401).json({ message: 'Image not found.' });
+      }
+
+      const image = results[0].path;
+      var bucket = process.env.AWS_BUCKET_NAME;
+      const data = s3.getObject({ bucket, image})
+      if (data.Body) {
+        return res.status(200).send(data.Body.toString("utf-8"))
+      } 
+      else { 
+        return res.status(401).json({ message: 'Image not found.' })
+      }
+    }
+  );
+})
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);

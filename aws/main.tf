@@ -27,7 +27,12 @@ sudo echo "DB_NAME="${var.RDS_NAME}"
 DB_USER="${var.RDS_USER}"
 DB_PASSWORD="${var.RDS_PASS}"
 DB_HOST="${aws_db_instance.db-rpl.address}"
-DB_PORT=3306" > .env
+DB_PORT=3306
+
+ACCESS_KEY="${var.AWS_ACCESS_KEY}"
+SECRET_ACCESS_KEY="${var.AWS_SECRET_KEY}"
+AWS_REGION="${var.AWS_REGION}"
+AWS_BUCKET_NAME="${aws_s3_bucket.rpl-s3-bucket.id}"" > .env
 sudo npm install
 sudo pm2 start ecosystem.config.cjs
 
