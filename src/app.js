@@ -9,12 +9,12 @@ const multer = require('multer');
 app.use(express.json());
 // for parsing multipart/form-data
 app.use(express.static('public'));
-const upload = multer({
-  limits: {
-    fileSize: 10 * 1024 * 1024, // limit file size to 5MB
-  },
-});
-app.use(upload.array()); 
+// const upload = multer({
+//   limits: {
+//     fileSize: 10 * 1024 * 1024, // limit file size to 5MB
+//   },
+// });
+// app.use(upload.array()); 
     
 var AWS = require('aws-sdk');
 
@@ -146,7 +146,13 @@ app.get('/api/user/:id', (req, res) => {
 //   )
 // });
 
-app.post('/api/image', upload.single('image'), (req, res) => {
+app.post('/api/image', 
+  multer({
+    limits: {
+      fileSize: 10 * 1024 * 1024, // limit file size to 5MB
+    },})
+  .single('image'), 
+  (req, res) => {
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: req.file.originalname,
