@@ -1,7 +1,6 @@
 require('dotenv').config({path:'./.env'});
 const express = require('express');
 const mysql = require('mysql');
-const fileUpload = require('express-fileupload');
 const app = express();
 const port = 3333;
 const multer = require('multer');
@@ -10,22 +9,22 @@ const multer = require('multer');
 app.use(express.json());
 // for parsing multipart/form-data
 app.use(express.static('public'));
-app.use(fileUpload());
-
 const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: {
-        fileSize: 10 * 1024 * 1024, // limit file size to 5MB
-      },
-    });
+  limits: {
+    fileSize: 10 * 1024 * 1024, // limit file size to 5MB
+  },
+});
+app.use(upload.array()); 
     
-    var AWS = require('aws-sdk');
-    
-    AWS.config.update({
-        accessKeyId: process.env.ACCESS_KEY, // Access key ID
-        secretAccesskey: process.env.SECRET_ACCESS_KEY, // Secret access key
-        region: process.env.AWS_REGION //Region
-      })
+var AWS = require('aws-sdk');
+
+AWS.config.update({
+  accessKeyId: 'AKIAQYP5HMBIGZXP6NE3', // Access key ID
+  secretAccesskey: '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', // Secret access key
+  region: 'ap-southeast-1', //Region
+  maxRetries: 3,
+  httpOptions: {timeout: 30000, connectTimeout: 5000}
+})
       
 const s3 = new AWS.S3();
 
@@ -43,8 +42,6 @@ db.connect((err) => {
   }
   console.log('Connected to MySQL database');
 });
-
-app.use(express.json())
 
 app.get('/api/version', (req, res) => {
   const version = 'v16.14.2';
@@ -149,7 +146,7 @@ app.get('/api/user/:id', (req, res) => {
 //   )
 // });
 
-app.post('/api/image', upload.single('file'), (req, res) => {
+app.post('/api/image', upload.single('image'), (req, res) => {
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: req.file.originalname,
