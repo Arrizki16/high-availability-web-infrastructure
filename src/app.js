@@ -19,11 +19,11 @@ app.use(express.static('public'));
 var AWS = require('aws-sdk');
 
 AWS.config.update({
-  accessKeyId: 'AKIAQYP5HMBIGZXP6NE3', // Access key ID
-  secretAccesskey: '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', // Secret access key
-  region: 'ap-southeast-1', //Region
   maxRetries: 3,
-  httpOptions: {timeout: 30000, connectTimeout: 5000}
+  httpOptions: {timeout: 30000, connectTimeout: 5000},
+  region: 'ap-southeast-1', //Region
+  accessKeyId: process.env.ACCESS_KEY, // Access key ID
+  secretAccesskey: process.env.SECRET_ACCESS_KEY // Secret access key
 })
       
 const s3 = new AWS.S3();
