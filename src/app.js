@@ -9,7 +9,6 @@ const multer = require('multer');
 
 app.use(express.json());
 // for parsing multipart/form-data
-app.use(upload.array()); 
 app.use(express.static('public'));
 app.use(fileUpload());
 
