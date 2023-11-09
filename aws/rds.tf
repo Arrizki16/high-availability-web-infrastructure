@@ -17,6 +17,7 @@ resource "aws_db_instance" "db-rpl" {
 
 resource "aws_security_group" "rds_sg" {
   name = "rds_sg"
+  vpc_id = aws_vpc.rpl-vpc.id
   ingress {
     from_port       = 3306
     to_port         = 3306
@@ -33,7 +34,7 @@ resource "aws_security_group" "rds_sg" {
 
 resource "aws_db_subnet_group" "db-subnet" {
     name = "db-subnet"
-    subnet_ids = ["subnet-09c24fde4eb965cb4", "subnet-06a261c9dbd53f4a3", "subnet-0715e175e8ca284d0"]
+    subnet_ids = [aws_subnet.subnet-1.id, aws_subnet.subnet-2.id, aws_subnet.subnet-3.id]
 }
 
 resource "null_resource" "setup-db" {

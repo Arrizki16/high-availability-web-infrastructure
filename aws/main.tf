@@ -10,7 +10,7 @@ resource "aws_launch_configuration" "custom-launch-config" {
   image_id = var.AMI
   instance_type = "t2.micro"
   key_name = aws_key_pair.rplkey.key_name
-  security_groups = ["sg-0b25b7859155bcde5"]
+  security_groups = [ aws_security_group.rpl-security-group.id ]
   user_data = <<EOF
 #!/bin/bash
 sudo apt-get update -y
@@ -63,7 +63,7 @@ EOF
 # autoscaling group
 resource "aws_autoscaling_group" "custom-group-autoscaling" {
   name = "custom-group-autoscaling"
-  vpc_zone_identifier = ["subnet-0715e175e8ca284d0"]
+  vpc_zone_identifier = [aws_subnet.subnet-1.id]
   launch_configuration = aws_launch_configuration.custom-launch-config.name
   min_size = 1
   max_size = 10
