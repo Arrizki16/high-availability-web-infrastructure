@@ -9,7 +9,7 @@ resource "aws_db_instance" "db-rpl" {
     username = var.RDS_USER
     password = var.RDS_PASS
     db_subnet_group_name = "${aws_db_subnet_group.db-subnet.name}"
-    publicly_accessible = true
+    publicly_accessible = false
     vpc_security_group_ids = ["${aws_security_group.rds_sg.id}"]
     skip_final_snapshot = true
 
@@ -37,9 +37,9 @@ resource "aws_db_subnet_group" "db-subnet" {
     subnet_ids = [aws_subnet.subnet-1.id, aws_subnet.subnet-2.id, aws_subnet.subnet-3.id]
 }
 
-resource "null_resource" "setup-db" {
-  depends_on = [ aws_db_instance.db-rpl ]
-  provisioner "local-exec" {
-    command = "mysql -u ${aws_db_instance.db-rpl.username} -p${var.RDS_PASS} -h ${aws_db_instance.db-rpl.address} < db.sql"
-  }
-}
+# resource "null_resource" "setup-db" {
+#   depends_on = [ aws_db_instance.db-rpl ]
+#   provisioner "local-exec" {
+#     command = "mysql -u ${aws_db_instance.db-rpl.username} -p${var.RDS_PASS} -h ${aws_db_instance.db-rpl.address} < db.sql"
+#   }
+# }

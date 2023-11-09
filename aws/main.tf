@@ -14,7 +14,7 @@ resource "aws_launch_configuration" "custom-launch-config" {
   user_data = <<EOF
 #!/bin/bash
 sudo apt-get update -y
-sudo apt-get install -y nginx git
+sudo apt-get install -y nginx git mysql-client
 curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
