@@ -20,10 +20,10 @@ sudo apt-get install -y nodejs
 
 sudo npm install pm2 -g
 
-sudo git clone https://github.com/Arrizki16/high-availability-web-infrastructure.git /var/www/app
-
-export AWS_ACCESS_KEY_ID="${var.AWS_ACCESS_KEY}"
-export AWS_SECRET_ACCESS_KEY="${var.AWS_SECRET_KEY}"
+sudo git clone https://github.com/Arrizki16/high-availability-web-infrastructure.git /var/www/app/
+mysql -u ${aws_db_instance.db-rpl.username} -p${var.RDS_PASS} -h ${aws_db_instance.db-rpl.address} < /var/www/app/aws/db.sql
+# export AWS_ACCESS_KEY_ID="${var.AWS_ACCESS_KEY}"
+# export AWS_SECRET_ACCESS_KEY="${var.AWS_SECRET_KEY}"
 
 cd /var/www/app/src
 sudo echo "DB_NAME="${var.RDS_NAME}"
