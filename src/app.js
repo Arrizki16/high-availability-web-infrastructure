@@ -195,6 +195,7 @@ app.get('/api/:id/images', (req, res) => {
       const image = results[0].path;
       var bucket = process.env.AWS_BUCKET_NAME;
       const data = s3.getObject({ bucket, image})
+      console.log(data)
       if (data.Body) {
         return res.status(200).send(data.Body.toString("utf-8"))
       } 

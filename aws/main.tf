@@ -11,6 +11,7 @@ resource "aws_launch_configuration" "custom-launch-config" {
   instance_type = "t2.micro"
   key_name = aws_key_pair.rplkey.key_name
   security_groups = [ aws_security_group.rpl-security-group.id ]
+  iam_instance_profile = aws_iam_instance_profile.ec2-profile.name
   user_data = <<EOF
 #!/bin/bash
 sudo apt-get update -y
