@@ -64,34 +64,11 @@ app.post('/api/user', (req, res) => {
       }
 
       if (results.length === 0) {
-        db.query(
-          'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-          [username, email, password],
-          (err, results) => {
-            if (err) {
-              throw err;
-            }
-          }
-        );
-        return res.status(200).json({ message: `Account created.`});
-      }
-
-      if (results.length === 2) {
-        if (username === results[0].username || username === results[1].username) {
-          return res.status(401).json({ message: `Username ${username} already taken`});
-        }
-        if (email === results[0].email || email === results[1].email) {
-          return res.status(401).json({ message: `Email ${email} has been used`});
-        }
+        return res.status(401).json({ message: 'User not found.' });
       }
 
       const user = results[0];
-
-      if (username === user.username) {
-        return res.status(401).json({ message: `Username ${username} already taken`});
-      } else {
-        return res.status(401).json({ message: `Email ${email} has been used`});
-      }
+      return res.status(200).json({ message: `Login success. Hello, ${user.username}` });
     }
   );
 })

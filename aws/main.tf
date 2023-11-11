@@ -3,6 +3,19 @@ resource "aws_key_pair" "rplkey" {
   public_key = file(var.PATH_TO_PUBLIC_KEY)
 }
 
+resource "aws_instance" "jumphost" {
+  ami = var.AMI
+  instance_type = "t2.micro"
+  key_name = aws_key_pair.rplkey.key_name
+  iam_instance_profile = aws_iam_instance_profile.ec2-profile.name
+  associate_public_ip_address = true
+  security_groups = [ aws_security_group.rpl-security-group.id ]
+  subnet_id = aws_subnet.public-b.id
+  tags = {
+    Name = "Jumphost"
+  }
+}
+
 # autoscaling launch config
 resource "aws_launch_configuration" "custom-launch-config" {
   depends_on = [ aws_db_instance.db-rpl ]
@@ -64,7 +77,7 @@ EOF
 # autoscaling group
 resource "aws_autoscaling_group" "custom-group-autoscaling" {
   name = "custom-group-autoscaling"
-  vpc_zone_identifier = [aws_subnet.subnet-1.id]
+  vpc_zone_identifier = [aws_subnet.private-a.id]
   launch_configuration = aws_launch_configuration.custom-launch-config.name
   min_size = 1
   max_size = 10

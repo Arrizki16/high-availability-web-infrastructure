@@ -34,7 +34,7 @@ resource "aws_security_group" "rds_sg" {
 
 resource "aws_db_subnet_group" "db-subnet" {
     name = "db-subnet"
-    subnet_ids = [aws_subnet.subnet-1.id, aws_subnet.subnet-2.id, aws_subnet.subnet-3.id]
+    subnet_ids = [aws_subnet.private-a.id, aws_subnet.private-b.id]
 }
 
 # resource "null_resource" "setup-db" {

@@ -8,7 +8,7 @@ resource "aws_lb_target_group" "target-group" {
     healthy_threshold = 3
     interval = 10
     matcher = 200
-    path = "/"
+    path = "/api/version"
     port = "traffic-port"
     protocol = "HTTP"
     timeout = 3
@@ -26,7 +26,7 @@ resource "aws_lb" "load-balancer" {
   internal = false
   load_balancer_type = "application"
   security_groups = [ aws_security_group.rpl-security-group.id ]
-  subnets = [aws_subnet.subnet-1.id, aws_subnet.subnet-2.id, aws_subnet.subnet-3.id]
+  subnets = [aws_subnet.public-a.id, aws_subnet.public-b.id]
   enable_deletion_protection = false
 }
 
