@@ -3,18 +3,18 @@ resource "aws_key_pair" "rplkey" {
   public_key = file(var.PATH_TO_PUBLIC_KEY)
 }
 
-resource "aws_instance" "jumphost" {
-  ami = var.AMI
-  instance_type = "t2.micro"
-  key_name = aws_key_pair.rplkey.key_name
-  iam_instance_profile = aws_iam_instance_profile.ec2-profile.name
-  associate_public_ip_address = true
-  security_groups = [ aws_security_group.rpl-security-group.id ]
-  subnet_id = aws_subnet.public-b.id
-  tags = {
-    Name = "Jumphost"
-  }
-}
+# resource "aws_instance" "jumphost" {
+#   ami = var.AMI
+#   instance_type = "t2.micro"
+#   key_name = aws_key_pair.rplkey.key_name
+#   iam_instance_profile = aws_iam_instance_profile.ec2-profile.name
+#   associate_public_ip_address = true
+#   security_groups = [ aws_security_group.rpl-security-group.id ]
+#   subnet_id = aws_subnet.public-b.id
+#   tags = {
+#     Name = "Jumphost"
+#   }
+# }
 
 # autoscaling launch config
 resource "aws_launch_configuration" "custom-launch-config" {
@@ -81,7 +81,7 @@ resource "aws_autoscaling_group" "custom-group-autoscaling" {
   launch_configuration = aws_launch_configuration.custom-launch-config.name
   min_size = 1
   max_size = 10
-  health_check_grace_period = 60
+  health_check_grace_period = 10
   health_check_type = "EC2"
   force_delete = true
   tag {
@@ -103,7 +103,7 @@ resource "aws_autoscaling_policy" "custom-cpu-policy" {
   autoscaling_group_name = aws_autoscaling_group.custom-group-autoscaling.name
   adjustment_type = "ChangeInCapacity"
   scaling_adjustment = 1
-  cooldown = 300
+  cooldown = 120
   policy_type = "SimpleScaling"
 }
 
@@ -112,7 +112,7 @@ resource "aws_cloudwatch_metric_alarm" "custom-cpu-alarm" {
   alarm_name = "custom-cpu-alarm"
   alarm_description = "alarm once cpu usage increases"
   comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods = 2
+  evaluation_periods = 1
   metric_name = "CPUUtilization"
   namespace = "AWS/EC2"
   period = 60
@@ -132,7 +132,7 @@ resource "aws_autoscaling_policy" "custom-cpu-policy-scaledown" {
   autoscaling_group_name = aws_autoscaling_group.custom-group-autoscaling.name
   adjustment_type = "ChangeInCapacity"
   scaling_adjustment = -1
-  cooldown = 300
+  cooldown = 120
   policy_type = "SimpleScaling"
 }
 
@@ -141,12 +141,12 @@ resource "aws_cloudwatch_metric_alarm" "custom-cpu-alarm-scaledown" {
   alarm_name = "custom-cpu-alarm-scaledown"
   alarm_description = "alarm once cpu usage decreases"
   comparison_operator = "LessThanOrEqualToThreshold"
-  evaluation_periods = 2
+  evaluation_periods = 1
   metric_name = "CPUUtilization"
   namespace = "AWS/EC2"
   period = 60
   statistic = "Average"
-  threshold = 20
+  threshold = 70
 
   dimensions = {
     "AutoScalingGroupName": aws_autoscaling_group.custom-group-autoscaling.name
