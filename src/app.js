@@ -49,29 +49,34 @@ app.get('/api/version', (req, res) => {
 });
 
 app.post('/api/user', (req, res) => {
-  const {username, email, password} = req.body;
+  const { email, password } = req.body;
 
-  if (!email || !password || !username) {
-    return res.status(400).json({ message: 'All fields must be filled.' });
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required.' });
   }
 
   db.query(
-    'SELECT * FROM users WHERE email = ? OR username = ?',
-    [email, username],
+    'SELECT * FROM users WHERE email = ?',
+    [email],
     (err, results) => {
       if (err) {
         throw err;
       }
 
       if (results.length === 0) {
-        return res.status(401).json({ message: 'User not found.' });
+        return res.status(401).json({ message: 'Incorrect email.' });
       }
 
       const user = results[0];
-      return res.status(200).json({ message: `Login success. Hello, ${user.username}` });
+
+      if (password === user.password) {
+        return res.status(200).json({ message: `Login successful. Welcome, ${user.username}!` });
+      } else {
+        return res.status(401).json({ message: 'Incorrect password.' });
+      }
     }
   );
-})
+});
 
 app.get('/api/user/:id', (req, res) => {
   const id = req.params.id
