@@ -38,7 +38,7 @@ app.use(express.static('public'));
 
 
 const db = mysql.createConnection({
-  host: "34.124.217.158",
+  host: "34.143.140.100",
   user: "root",
   password: "password",
   database: "rpl",
