@@ -1,40 +1,31 @@
 require('dotenv').config({path:'./.env'});
 const express = require('express');
+// const multer = require('multer');
+const { Storage } = require('@google-cloud/storage');
 const mysql = require('mysql');
+const Multer = require('multer');
 const app = express();
 const port = 3333;
-// const multer = require('multer');
-
 
 app.use(express.json());
-// for parsing multipart/form-data
 app.use(express.static('public'));
+
+// const storage = multer.memoryStorage();
+// // const upload = multer({ storage: storage });
+
+// const storageGCS = new Storage({
+//   projectId: 'rpl-project-404906',
+//   keyFilename: 'csql-ce-cs.json',
+// });
+
+
 // const upload = multer({
 //   limits: {
-//     fileSize: 10 * 1024 * 1024, // limit file size to 5MB
+//     fileSize: 10 * 1024 * 1024, // limit file size to 10MB
 //   },
-// });
-// app.use(upload.array()); 
-    
-// var AWS = require('aws-sdk');
+// }).single('image');
 
-// AWS.config.update({
-//   maxRetries: 3,
-//   httpOptions: {timeout: 30000, connectTimeout: 5000},
-//   region: 'ap-southeast-1', //Region
-//   accessKeyId: process.env.ACCESS_KEY, // Access key ID
-//   secretAccesskey: process.env.SECRET_ACCESS_KEY // Secret access key
-// })
-      
-// const s3 = new AWS.S3();
-
-// const db = mysql.createConnection({
-//   host: process.env.DB_HOST,
-//   user: process.env.DB_USER,
-//   password: process.env.DB_PASSWORD,
-//   database: process.env.DB_NAME,
-//   port: parseInt(process.env.DB_PORT)
-// });
+// const bucket = storageGCS.bucket('rpl-cs-revision');
 
 
 const db = mysql.createConnection({
@@ -109,33 +100,106 @@ app.get('/api/user/:id', (req, res) => {
   );
 });
 
-// app.post('/api/upload', (req, res) => {
-//   const blobData = req.body.data;
-//   db.query(
-//     'INSERT INTO images (data) VALUES (?)',
-//     [blobData],
-//     (err, results) => {
-//       if (err) {
-//         return res.status(400).json({ message: err});
-//       }
-//       return res.status(400).json({ message: `${results} :: ${blobData}`});
-//     }
-//   );
-//   return res.status(200).json({ message: `File uploaded successfully.`});
-// });
+app.post('/api/register', (req, res) => {
+  const {username, email, password} = req.body;
 
-// app.get('/api/image/:id', (req, res) => {
-//   db.query(
-//     'SELECT data FROM images WHERE id = ? ',
-//     [req.params.id],
-//     (err, results) => {
-//       if (err) {
-//         throw err;
-//       }
-//       res.send(results[0]);
+  if (!email || !password || !username) {
+    return res.status(400).json({ message: 'All fields must be filled.' });
+  }
+
+  db.query(
+    'SELECT * FROM users WHERE email = ? OR username = ?',
+    [email, username],
+    (err, results) => {
+      if (err) {
+        throw err;
+      }
+
+      if (results.length === 0) {
+        db.query(
+          'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+          [username, email, password],
+          (err, results) => {
+            if (err) {
+              throw err;
+            }
+          }
+        );
+        return res.status(200).json({ message: `Account created.`});
+      }
+
+      if (results.length === 2) {
+        if (username === results[0].username || username === results[1].username) {
+          return res.status(401).json({ message: `Username ${username} already taken`});
+        }
+        if (email === results[0].email || email === results[1].email) {
+          return res.status(401).json({ message: `Email ${email} has been used`});
+        }
+      }
+
+      const user = results[0];
+
+      if (username === user.username) {
+        return res.status(401).json({ message: `Username ${username} already taken`});
+      } else {
+        return res.status(401).json({ message: `Email ${email} has been used`});
+      }
+    }
+  );
+});
+
+app.listen(port, () => {
+  console.log(`Server is running at http://localhost:${port}`);
+});
+
+
+// app.post('/api/image',
+//   multer({
+//     limits: {
+//       fileSize: 10 * 1024 * 1024, // limit file size to 5MB
+//     },})
+//   .single('image'), 
+//   (req, res) => {
+//     if (err) {
+//       console.error(err);
+//       return res.status(500).send('Error uploading file');
 //     }
-//   )
-// });
+
+//     const params = {
+//       metadata: {
+//         contentType: req.file.mimetype,
+//       },
+//     };
+
+//     const blob = bucket.file(req.file.originalname);
+//     const blobStream = blob.createWriteStream(params);
+
+//     blobStream.on('error', (err) => {
+//       console.error(err);
+//       return res.status(500).send('Error uploading file to GCS');
+//     });
+
+//     blobStream.on('finish', () => {
+//       // File uploaded successfully to GCS
+//       const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+
+//       // Store file path in MySQL database
+//       db.query(
+//         'INSERT INTO images (path) VALUES (?)',
+//         [publicUrl],
+//         (err, results) => {
+//           if (err) {
+//             throw err;
+//           }
+
+//           res.status(201).send('File uploaded successfully');
+//         }
+//       );
+//     });
+
+//     blobStream.end(req.file.buffer);
+//   });
+;
 
 // app.post('/api/image', 
 //   multer({
@@ -200,54 +264,50 @@ app.get('/api/user/:id', (req, res) => {
 //   );
 // })
 
-app.post('/api/register', (req, res) => {
-  const {username, email, password} = req.body;
+const storage = new Storage({ keyFilename: 'csql-ce-cs.json' });
 
-  if (!email || !password || !username) {
-    return res.status(400).json({ message: 'All fields must be filled.' });
+const multer = Multer({
+  storage: Multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+});
+
+const bucketName = "rpl-cs-revision";
+
+app.post('/api/image', multer.single('image'), async (req, res) => {
+  try {
+    const bucket = storage.bucket(bucketName);
+
+    const file = bucket.file(req.file.originalname);
+    const stream = file.createWriteStream({
+      metadata: {
+        contentType: req.file.mimetype,
+      },
+      resumable: false,
+    });
+
+    stream.on('error', (err) => {
+      console.error(err);
+      res.status(500).send('Error uploading file to Google Cloud Storage');
+    });
+
+    stream.on('finish', async () => {
+      try {
+        // Insert into the database
+        await db.query('INSERT INTO images (path) VALUES (?)', [req.file.originalname]);
+
+        res.status(201).send('File uploaded successfully');
+      } catch (dbError) {
+        console.error(dbError);
+        res.status(500).send('Error inserting into the database');
+      }
+    });
+
+    stream.end(req.file.buffer);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error uploading file');
   }
-
-  db.query(
-    'SELECT * FROM users WHERE email = ? OR username = ?',
-    [email, username],
-    (err, results) => {
-      if (err) {
-        throw err;
-      }
-
-      if (results.length === 0) {
-        db.query(
-          'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-          [username, email, password],
-          (err, results) => {
-            if (err) {
-              throw err;
-            }
-          }
-        );
-        return res.status(200).json({ message: `Account created.`});
-      }
-
-      if (results.length === 2) {
-        if (username === results[0].username || username === results[1].username) {
-          return res.status(401).json({ message: `Username ${username} already taken`});
-        }
-        if (email === results[0].email || email === results[1].email) {
-          return res.status(401).json({ message: `Email ${email} has been used`});
-        }
-      }
-
-      const user = results[0];
-
-      if (username === user.username) {
-        return res.status(401).json({ message: `Username ${username} already taken`});
-      } else {
-        return res.status(401).json({ message: `Email ${email} has been used`});
-      }
-    }
-  );
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
