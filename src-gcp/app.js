@@ -152,118 +152,6 @@ app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
 
-
-// app.post('/api/image',
-//   multer({
-//     limits: {
-//       fileSize: 10 * 1024 * 1024, // limit file size to 5MB
-//     },})
-//   .single('image'), 
-//   (req, res) => {
-//     if (err) {
-//       console.error(err);
-//       return res.status(500).send('Error uploading file');
-//     }
-
-//     const params = {
-//       metadata: {
-//         contentType: req.file.mimetype,
-//       },
-//     };
-
-//     const blob = bucket.file(req.file.originalname);
-//     const blobStream = blob.createWriteStream(params);
-
-//     blobStream.on('error', (err) => {
-//       console.error(err);
-//       return res.status(500).send('Error uploading file to GCS');
-//     });
-
-//     blobStream.on('finish', () => {
-//       // File uploaded successfully to GCS
-//       const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-
-//       // Store file path in MySQL database
-//       db.query(
-//         'INSERT INTO images (path) VALUES (?)',
-//         [publicUrl],
-//         (err, results) => {
-//           if (err) {
-//             throw err;
-//           }
-
-//           res.status(201).send('File uploaded successfully');
-//         }
-//       );
-//     });
-
-//     blobStream.end(req.file.buffer);
-//   });
-;
-
-// app.post('/api/image', 
-//   multer({
-//     limits: {
-//       fileSize: 10 * 1024 * 1024, // limit file size to 5MB
-//     },})
-//   .single('image'), 
-//   (req, res) => {
-//   const params = {
-//     Bucket: process.env.AWS_BUCKET_NAME,
-//     Key: req.file.originalname,
-//     Body: req.file.buffer,
-//   };
-
-//   s3.upload(params, (err, data) => {
-//     if (err) {
-//       console.error(err);
-//       return res.status(500).send('Error uploading file');
-//     }
-
-//     db.query(
-//       'INSERT INTO images (path) VALUES (?)',
-//       [req.file.originalname],
-//       (err, results) => {
-//         if (err) {
-//           throw err;
-//         }
-//       }
-//     );
-
-//     res.status(201).send('File uploaded successfully');
-//   });
-// })
-
-// app.get('/api/:id/images', (req, res) => {
-//   db.query(
-//     'SELECT path FROM images WHERE id = ?',
-//     [req.params.id],
-//     (err, results) => {
-//       if (err) {
-//         throw err;
-//       }
-
-//       if (results.length === 0) {
-//         return res.status(401).json({ message: 'Image not found.' });
-//       }
-
-//       const image = results[0].path;
-//       const getParams = {
-//         Bucket: process.env.AWS_BUCKET_NAME,
-//         Key: image
-//       }
-//       s3.getObject(getParams, function(err, data) {
-//         if (err) {
-//           return res.status(401).json({ message: 'Image not found.' })
-//         } 
-//         else { 
-//           return res.status(200).send(data.Body)
-//         }
-//       })
-//     }
-//   );
-// })
-
 const storage = new Storage({ keyFilename: 'csql-ce-cs.json' });
 
 const multer = Multer({
@@ -294,7 +182,6 @@ app.post('/api/image', multer.single('image'), async (req, res) => {
 
     stream.on('finish', async () => {
       try {
-        // Insert into the database
         await db.query('INSERT INTO images (path) VALUES (?)', [req.file.originalname]);
 
         res.status(201).send('File uploaded successfully');
@@ -310,4 +197,37 @@ app.post('/api/image', multer.single('image'), async (req, res) => {
     res.status(500).send('Error uploading file');
   }
 });
+
+
+app.get('/api/image/:id', async (req, res) => {
+  try {
+    const imageId = req.params.id;
+    
+    const dbResult = await db.query('SELECT path FROM images WHERE id = ?', [imageId]);
+    console.log(dbResult)
+    
+    if (dbResult.length === 0) {
+      return res.status(404).send('Image not found');
+    }
+
+    const imagePath = dbResult[0].path;
+    console.log("ini adalah : ", imagePath)
+
+    const bucket = storage.bucket(bucketName);
+    const file = bucket.file(imagePath);
+
+    const [fileExists] = await file.exists();
+
+    if (!fileExists) {
+      return res.status(404).send('Image not found in Google Cloud Storage');
+    }
+
+    const readStream = file.createReadStream();
+    readStream.pipe(res);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error retrieving image');
+  }
+});
+
 
