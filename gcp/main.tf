@@ -25,9 +25,9 @@ resource "google_compute_instance_template" "instance-template" {
   network_interface {
     network    = google_compute_network.rpl-vpc-network.id
     subnetwork = google_compute_subnetwork.rpl-backend-subnet.id
-    access_config {
+    # access_config {
 
-    }
+    # }
   }
 
   disk {
@@ -50,7 +50,7 @@ cd /var/www/app/src-gcp
 sudo echo 'DB_NAME="rpl"
 DB_USER="root"
 DB_PASSWORD="password"
-DB_HOST="34.124.217.158"
+DB_HOST="34.124.229.76"
 DB_PORT=3306' > .env
 
 sudo npm install
