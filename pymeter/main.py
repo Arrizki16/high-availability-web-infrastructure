@@ -3,20 +3,19 @@ from pymeter.api.samplers import HttpSampler
 from pymeter.api.reporters import HtmlReporter
 from pymeter.api import ContentType
 from pymeter.api.timers import ConstantTimer
+import time
 
 '''
 100 thread -> 1200 req / detik -> 2 instance (cpu utilization +- 40% total)
 500 thread -> 6000 req / detik -> 10 instance
 '''
 # create HTTP sampler, sends a get request to the given url
-url = "http://load-balancer-74252051.ap-southeast-1.elb.amazonaws.com"
+url = "http://load-balancer-625642587.ap-southeast-1.elb.amazonaws.com"
 endpoint_paths = ["/api/version", "/api/user", "/api/user/1", "/api/image", "/api/1/images"]
 
 holdup = 300
 rampup_sec = 1
 
-times = list()
-timer = ConstantTimer(0)
 threads = [100, 200, 500]
 
 for endpoint_path in endpoint_paths:
@@ -40,14 +39,15 @@ for endpoint_path in endpoint_paths:
         print(f'Processing number of user: {thread}, endpoint: {url+endpoint_path}')
         html_reporter = HtmlReporter()
         # create a thread group with {thread} threads that runs for for 600 sec, give it the http sampler as a child input
-        thread_group = ThreadGroupWithRampUpAndHold(thread, rampup_sec, holdup, http_sampler, timer)
+        thread_group = ThreadGroupWithRampUpAndHold(thread, rampup_sec, holdup, http_sampler)
 
         # create a test plan with the required thread group
         test_plan = TestPlan(thread_group, html_reporter)
 
         # run the test plan and take the results
         stats = test_plan.run()
-        timer = ConstantTimer(10000)
+        time.sleep(10)
+        # timer = ConstantTimer(10000)
 
 # http_sampler = (HttpSampler("echo_get_request", url + endpoint_paths[3])
 #                 .multipart("image", "image2.jpg", ContentType.MULTIPART_FORM_DATA)
