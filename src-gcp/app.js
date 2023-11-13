@@ -163,71 +163,119 @@ const multer = Multer({
 
 const bucketName = "rpl-cs-revision";
 
-app.post('/api/image', multer.single('image'), async (req, res) => {
-  try {
-    const bucket = storage.bucket(bucketName);
+app.post('/api/image',
+  multer.single('image'),
+  async (req, res) => {
+    await storage.bucket(bucketName).upload(req.file.originalname);
 
-    const file = bucket.file(req.file.originalname);
-    const stream = file.createWriteStream({
-      metadata: {
-        contentType: req.file.mimetype,
-      },
-      resumable: false,
-    });
-
-    stream.on('error', (err) => {
-      console.error(err);
-      res.status(500).send('Error uploading file to Google Cloud Storage');
-    });
-
-    stream.on('finish', async () => {
-      try {
-        await db.query('INSERT INTO images (path) VALUES (?)', [req.file.originalname]);
-
-        res.status(201).send('File uploaded successfully');
-      } catch (dbError) {
-        console.error(dbError);
-        res.status(500).send('Error inserting into the database');
+    db.query(
+      'INSERT INTO images (path) VALUES (?)',
+      [req.file.originalname],
+      (err, results) => {
+        if (err) {
+          throw err;
+        }
       }
-    });
+    );
 
-    stream.end(req.file.buffer);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error uploading file');
-  }
+    res.status(201).send('File uploaded successfully');
 });
 
+app.get('/api/image/:id', (req, res) => {
+  db.query(
+    'SELECT path FROM images WHERE id = ?',
+    [req.params.id],
+    async (err, results) => {
+      if (err) {
+        throw err;
+      }
 
-app.get('/api/image/:id', async (req, res) => {
-  try {
-    const imageId = req.params.id;
-    
-    const dbResult = await db.query('SELECT path FROM images WHERE id = ?', [imageId]);
-    console.log(dbResult)
-    
-    if (dbResult.length === 0) {
-      return res.status(404).send('Image not found');
+      if (results.length === 0) {
+        return res.status(401).json({ message: 'Image not found.' });
+      }
+
+      const pathfile = results[0].path;
+      console.log(pathfile)
+      const contents = await storage.bucket(bucketName).file(pathfile).download();
+
+      if (contents) {
+        // console.log(contents)
+        return res.status(200).send(contents)
+      }
+      else {
+        return res.status(401).json({ message: 'Image not found' })
+      }
     }
-
-    const imagePath = dbResult[0].path;
-    console.log("ini adalah : ", imagePath)
-
-    const bucket = storage.bucket(bucketName);
-    const file = bucket.file(imagePath);
-
-    const [fileExists] = await file.exists();
-
-    if (!fileExists) {
-      return res.status(404).send('Image not found in Google Cloud Storage');
-    }
-
-    const readStream = file.createReadStream();
-    readStream.pipe(res);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error retrieving image');
-  }
+  )
 });
+
+// app.post('/api/image', 
+//   multer.single('image'), 
+//   async (req, res) => {
+//   try {
+//     const bucket = storage.bucket(bucketName);
+
+//     const file = bucket.file(req.file.originalname);
+//     const stream = file.createWriteStream({
+//       metadata: {
+//         contentType: req.file.mimetype,
+//       },
+//       resumable: false,
+//     });
+
+//     stream.on('error', (err) => {
+//       console.error(err);
+//       res.status(500).send('Error uploading file to Google Cloud Storage');
+//     });
+
+//     stream.on('finish', async () => {
+//       try {
+//         await db.query('INSERT INTO images (path) VALUES (?)', [req.file.originalname]);
+
+//         res.status(201).send('File uploaded successfully');
+//       } catch (dbError) {
+//         console.error(dbError);
+//         res.status(500).send('Error inserting into the database');
+//       }
+//     });
+
+//     stream.end(req.file.buffer);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send('Error uploading file');
+//   }
+// });
+
+
+// app.get('/api/image/:id', async (req, res) => {
+//   try {
+//     const imageId = req.params.id;
+    
+//     const dbResult = await db.query('SELECT path FROM images WHERE id = ?', [imageId]);
+//     console.log(dbResult)
+    
+//     if (dbResult.length === 0) {
+//       return res.status(404).send('Image not found');
+//     }
+
+//     const imagePath = dbResult[0].path;
+//     console.log("ini adalah : ", imagePath)
+
+//     const bucket = storage.bucket(bucketName);
+//     const file = bucket.file(imagePath);
+
+//     const [fileExists] = await file.exists();
+
+//     if (!fileExists) {
+//       return res.status(404).send('Image not found in Google Cloud Storage');
+//     }
+
+//     const readStream = file.createReadStream();
+//     readStream.pipe(res);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send('Error retrieving image');
+//   }
+// });
 
 
