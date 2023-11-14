@@ -165,8 +165,8 @@ const bucketName = "rpl-cs-revision";
 
 app.post('/api/image',
   multer.single('image'),
-  async (req, res) => {
-    await storage.bucket(bucketName).upload(req.file.originalname);
+  (req, res) => {
+    storage.bucket(bucketName).upload(req.file.originalname);
 
     db.query(
       'INSERT INTO images (path) VALUES (?)',
@@ -185,7 +185,7 @@ app.get('/api/image/:id', (req, res) => {
   db.query(
     'SELECT path FROM images WHERE id = ?',
     [req.params.id],
-    async (err, results) => {
+    (err, results) => {
       if (err) {
         throw err;
       }
@@ -196,7 +196,7 @@ app.get('/api/image/:id', (req, res) => {
 
       const pathfile = results[0].path;
       console.log(pathfile)
-      const contents = await storage.bucket(bucketName).file(pathfile).download();
+      const contents = storage.bucket(bucketName).file(pathfile).download();
 
       if (contents) {
         // console.log(contents)
